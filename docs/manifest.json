@@ -1,0 +1,42 @@
+{
+  "name": "ShruggieTech Schemas",
+  "short_name": "Schemas",
+  "description": "A collection of JSON Schemas for validating data structures.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "assets/brand/ShruggieSquare2-0064.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/brand/ShruggieSquare2-0092.png",
+      "sizes": "92x92",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/brand/ShruggieSquare2-0144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/brand/ShruggieSquare2-0192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/brand/ShruggieSquare2-0256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/brand/ShruggieSquare2-0512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
