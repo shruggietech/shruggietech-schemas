@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
-  "$id": "https://shruggietech.com/schemas/shruggie-indexer/v2/index-entry.json",
+  "$id": "https://schemas.shruggie.tech/data/shruggie-indexer-v2.schema.json",
   "title": "IndexEntry",
   "description": "Schema version 2 of the shruggie-indexer output format. Describes a single indexed file or directory, including its identity, filesystem properties, timestamps, and any associated metadata entries. This schema replaces the original MakeIndex v1 schema with a restructured layout that consolidates related fields into logical sub-objects, eliminates redundant fields, adds explicit provenance tracking for metadata entries, and provides the structural foundation for MetaMergeDelete reversal operations.",
   "type": "object",
