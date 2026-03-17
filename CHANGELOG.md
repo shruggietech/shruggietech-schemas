@@ -8,20 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## `[Unreleased]`
 
 ### Added
-- **Schema catalog index** (`docs/data/schemas.json`): machine-readable JSON catalog listing all available schemas with metadata (id, title, version, description, status, file, notes, externalLinks). Can be fetched programmatically to discover and query available schemas.
-- **Interactive schema table** on the landing page: sortable columns (Name, Version, Status), real-time text filter, status badges, and "View Schema" action buttons — all rendered dynamically from `schemas.json`.
-- **Machine-readable endpoint notice** on the landing page linking to `schemas.json` for script-friendly consumers.
-- **`<noscript>` fallback** directing users without JavaScript to the `schemas.json` catalog.
-- **SMS Backup & Restore** schema entry added to the README Available Schemas section.
-- **Schema Catalog Index** section in README documenting all `schemas.json` keys with a reference table, example entry, and programmatic usage example.
-- **Adding a New Schema** section in README describing the two-step workflow: drop the schema file into `docs/data/` and append an entry to `schemas.json`.
-- `CHANGELOG.md` (this file).
+- **"How It Works" section** in README explaining the GitHub Pages architecture, data-driven landing page, and schema addition workflow.
+- **"Schema Catalog" section** in README replacing per-schema listings with a pointer to the live catalog and machine-readable endpoint.
+- `assets/` directory entry in README repository structure tree.
+- Established definition reuse guidance (`HashSet`, `NameObject`) and explicit `$schema` URI in README Schema Design Guidelines.
 
 ### Changed
-- **Landing page refactored** from a hardcoded HTML list to a data-driven approach — adding a new schema no longer requires editing `index.html`.
-- **README contributing steps** updated to reference the new `schemas.json` registration workflow.
-- **README repository structure** updated to include `schemas.json` and `sms-backup-restore.schema.json`.
-- **README copyright year** updated to 2025–2026.
+- **README overhauled** to remove all hard-coded schema descriptions, URLs, use-cases, and inline validation examples. The live catalog at `schemas.shruggie.tech` is now the single source of truth for schema details.
+- **README "Schema Catalog Index" section** slimmed down from a full field-by-field reference table to a concise catalog pointer with programmatic usage example.
+- **README "Adding a New Schema" and "Contributing" sections** merged into a single "Contributing" section with "Adding a New Schema" and "Schema Design Guidelines" as subsections.
+- **README "Repository Structure" tree** genericized — specific schema filenames replaced with `*.schema.json` wildcard pattern.
+- **Corporate name corrected** from "ShruggieTech LLC" to "Shruggie LLC" across README, `docs/index.html`, and `.github/copilot-instructions.md`.
 
 ### Removed
-- Hardcoded schema `<a>` entries and `<noscript>` item list from `index.html` (replaced by data-driven rendering from `schemas.json`).
+- Hard-coded "Available Schemas" section from README (4 schema entries with descriptions, URLs, feature lists, use-cases, and validation examples).
+- Full `schemas.json` field reference table and example JSON entry from README "Schema Catalog Index" section.
+- Individual schema filenames from README repository structure tree.

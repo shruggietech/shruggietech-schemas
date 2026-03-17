@@ -1,6 +1,6 @@
 # Copilot Instructions for shruggietech-schemas
 
-This repository manages standard JSON schemas for ShruggieTech LLC products. It is configured to serve these schemas via GitHub Pages from the `docs/` directory.
+This repository manages standard JSON schemas for Shruggie LLC products. It is configured to serve these schemas via GitHub Pages from the `docs/` directory.
 
 ## Repository Structure
 
