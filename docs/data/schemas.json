@@ -1,10 +1,29 @@
 [
     {
+        "id": "shruggie-indexer-v4",
+        "title": "shruggie-indexer schema",
+        "version": "v4",
+        "description": "A JSON Schema for validating shruggie-indexer outputs. This is the current schema used for shruggie-indexer and the related metadexer project.",
+        "status": "current",
+        "file": "shruggie-indexer-v4.schema.json",
+        "notes": [],
+        "externalLinks": [
+            {
+                "label": "shruggie-indexer (GitHub)",
+                "url": "https://github.com/shruggietech/shruggie-indexer"
+            },
+            {
+                "label": "metadexer (GitHub)",
+                "url": "https://github.com/shruggietech/metadexer"
+            }
+        ]
+    },
+    {
         "id": "shruggie-indexer-v3",
         "title": "shruggie-indexer schema",
         "version": "v3",
-        "description": "A JSON Schema for validating shruggie-indexer outputs. This is the current schema used for shruggie-indexer and the related metadexer project.",
-        "status": "current",
+        "description": "A JSON Schema for validating shruggie-indexer outputs. It is now deprecated by the v4 schema.",
+        "status": "deprecated",
         "file": "shruggie-indexer-v3.schema.json",
         "notes": [],
         "externalLinks": [
@@ -22,7 +41,7 @@
         "id": "shruggie-indexer-v2",
         "title": "shruggie-indexer schema",
         "version": "v2",
-        "description": "A JSON Schema for validating shruggie-indexer outputs. It is now deprecated by the v3 schema.",
+        "description": "A JSON Schema for validating shruggie-indexer outputs. It is now deprecated by the v4 schema.",
         "status": "deprecated",
         "file": "shruggie-indexer-v2.schema.json",
         "notes": [],
@@ -41,7 +60,7 @@
         "id": "shruggie-indexer-v1",
         "title": "shruggie-indexer schema",
         "version": "v1",
-        "description": "A JSON Schema for validating shruggie-indexer outputs. This is the original schema used for the initial shruggie-indexer (Powershell 'MakeIndex' utility). It is now deprecated by the v3 schema.",
+        "description": "A JSON Schema for validating shruggie-indexer outputs. This is the original schema used for the initial shruggie-indexer (Powershell 'MakeIndex' utility). It is now deprecated by the v4 schema.",
         "status": "deprecated",
         "file": "shruggie-indexer-v1.schema.json",
         "notes": [],
