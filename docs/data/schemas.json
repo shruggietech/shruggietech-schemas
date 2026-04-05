@@ -76,6 +76,16 @@
         ]
     },
     {
+        "id": "shruggie-fetcher",
+        "title": "shruggie-fetcher schema",
+        "version": "v1",
+        "description": "A JSON Schema for validating shruggie-fetcher target definitions and runtime request conditions.",
+        "status": "current",
+        "file": "shruggie-fetcher.schema.json",
+        "notes": [],
+        "externalLinks": []
+    },
+    {
         "id": "web-manifest",
         "title": "Web Manifest",
         "version": null,
