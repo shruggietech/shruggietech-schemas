@@ -170,7 +170,7 @@
                     "description": "Custom User-Agent string for endpoint access policies.",
                     "minLength": 1,
                     "examples": [
-                        "ShruggieFetcher/1.0 (+https://world-monitor.com)"
+                        "ShruggieFetcher/1.0 (https://shruggie.tech)"
                     ]
                 },
                 "auth": {
