@@ -1,0 +1,162 @@
+{
+  "$id": "https://schemas.shruggie.tech/data/reference-mapping.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ShruggieTech Reference Mapping Entry",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Stable unique identifier in rm-NNNNN format.",
+      "pattern": "^rm-\\d{5}$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "file_path",
+        "section_ref",
+        "term",
+        "url",
+        "alias",
+        "frontmatter_field",
+        "import_statement"
+      ]
+    },
+    "project": {
+      "type": "string",
+      "pattern": "^(_global|[a-z0-9][a-z0-9-]*)$"
+    },
+    "old_value": {
+      "type": "string",
+      "minLength": 1
+    },
+    "new_value": {
+      "type": ["string", "null"]
+    },
+    "match_mode": {
+      "type": "string",
+      "enum": ["exact", "regex", "contextual"]
+    },
+    "context_hint": {
+      "type": ["string", "null"]
+    },
+    "scope": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "kb",
+          "project_repo",
+          "claude_projects",
+          "sprint_docs",
+          "session_reports",
+          "readmes",
+          "agent_context_files",
+          "external"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "in_progress", "partial", "complete"]
+    },
+    "added_date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "completed_dates": {
+      "type": "object",
+      "patternProperties": {
+        "^(kb|project_repo|claude_projects|sprint_docs|session_reports|readmes|agent_context_files|external)$": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": ["string", "null"]
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "project",
+    "old_value",
+    "new_value",
+    "match_mode",
+    "context_hint",
+    "scope",
+    "status",
+    "added_date",
+    "completed_dates",
+    "notes"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "match_mode": {
+            "const": "contextual"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "context_hint": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ],
+  "examples": [
+    {
+      "id": "rm-00001",
+      "kind": "file_path",
+      "project": "shruggie-knowledgebase",
+      "old_value": "content/projects/shruggie-knowledgebase.md",
+      "new_value": "content/projects/shruggie-knowledgebase/index.md",
+      "match_mode": "exact",
+      "context_hint": null,
+      "scope": ["project_repo"],
+      "status": "pending",
+      "added_date": "2026-04-10",
+      "completed_dates": {},
+      "notes": null
+    },
+    {
+      "id": "rm-00002",
+      "kind": "term",
+      "project": "_global",
+      "old_value": "technical specification file",
+      "new_value": "technical specification",
+      "match_mode": "contextual",
+      "context_hint": "Apply only when the phrase explicitly references a file path or file location. Leave conceptual references unchanged.",
+      "scope": ["kb", "project_repo", "readmes"],
+      "status": "pending",
+      "added_date": "2026-04-10",
+      "completed_dates": {},
+      "notes": "Context-sensitive migration."
+    },
+    {
+      "id": "rm-00003",
+      "kind": "section_ref",
+      "project": "_global",
+      "old_value": "§[0-9]+\\.[0-9]+",
+      "new_value": "relative markdown links",
+      "match_mode": "regex",
+      "context_hint": null,
+      "scope": ["kb", "sprint_docs"],
+      "status": "partial",
+      "added_date": "2026-04-10",
+      "completed_dates": {
+        "kb": "2026-04-10"
+      },
+      "notes": "Legacy documents may retain notation until migrated."
+    }
+  ]
+}
