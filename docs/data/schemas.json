@@ -1,5 +1,15 @@
 [
     {
+        "id": "reference-mapping",
+        "title": "Reference Mapping",
+        "version": null,
+        "description": "A JSON Schema for validating ShruggieTech reference mapping entries, which track old-to-new value migrations across documentation scopes with support for exact, regex, and contextual match modes.",
+        "status": "current",
+        "file": "reference-mapping.schema.json",
+        "notes": [],
+        "externalLinks": []
+    },
+    {
         "id": "shruggie-indexer-v4",
         "title": "shruggie-indexer schema",
         "version": "v4",
