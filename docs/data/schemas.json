@@ -1,5 +1,20 @@
 [
     {
+        "id": "frontmatter",
+        "title": "DocumentFrontmatter",
+        "version": "v1",
+        "description": "A JSON Schema for validating the frontmatter format used by ShruggieTech knowledge base Markdown documents.",
+        "status": "current",
+        "file": "frontmatter.schema.json",
+        "notes": [],
+        "externalLinks": [
+            {
+                "label": "ShruggieTech Knowledge Base (Github)",
+                "url": "https://github.com/shruggietech/shruggie-kb"
+            }
+        ]
+    },
+    {
         "id": "reference-mapping",
         "title": "Reference Mapping",
         "version": null,
