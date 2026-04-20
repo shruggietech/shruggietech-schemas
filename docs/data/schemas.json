@@ -1,5 +1,65 @@
 [
     {
+        "id": "common-definitions",
+        "title": "CommonDefinitions",
+        "version": null,
+        "description": "Shared type definitions referenced by all ShruggieTech knowledge base schemas. This file is the single source of truth for Uuid, IsoDate, TagLabel, AliasLabel, NameIdReference, and ExternalReference.",
+        "status": "current",
+        "file": "common-definitions.schema.json",
+        "notes": [],
+        "externalLinks": []
+    },
+    {
+        "id": "credentials-manifest",
+        "title": "ShruggieTech Credentials Manifest",
+        "version": null,
+        "description": "Metadata-only catalog of credentials required by a ShruggieTech project. This schema deliberately prohibits storage of credential values; values live exclusively in their target systems and are referenced by this manifest, never embedded in it.",
+        "status": "current",
+        "file": "credentials-manifest.schema.json",
+        "notes": [],
+        "externalLinks": []
+    },
+    {
+        "id": "index",
+        "title": "DirectoryIndex",
+        "version": null,
+        "description": "Machine-generated table of contents for a directory. Produced by the pre-build script. Never hand-authored. Committed alongside content.",
+        "status": "current",
+        "file": "index.schema.json",
+        "notes": [],
+        "externalLinks": []
+    },
+    {
+        "id": "object-envelope",
+        "title": "ObjectEnvelope",
+        "version": null,
+        "description": "Base schema for every standalone JSON object in the knowledge base. Concrete schemas (Person, Organization) extend this via allOf composition. The envelope is never instantiated directly.",
+        "status": "current",
+        "file": "object-envelope.schema.json",
+        "notes": [],
+        "externalLinks": []
+    },
+    {
+        "id": "organization",
+        "title": "Organization",
+        "version": null,
+        "description": "Profile of an organization relevant to ShruggieTech.",
+        "status": "current",
+        "file": "organization.schema.json",
+        "notes": [],
+        "externalLinks": []
+    },
+    {
+        "id": "person",
+        "title": "Person",
+        "version": null,
+        "description": "Profile of a person relevant to ShruggieTech. Stable identity and role data only; per-interaction prep notes belong in the future CRM, not here.",
+        "status": "current",
+        "file": "person.schema.json",
+        "notes": [],
+        "externalLinks": []
+    },
+    {
         "id": "frontmatter",
         "title": "DocumentFrontmatter",
         "version": "v1",
