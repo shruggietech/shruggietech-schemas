@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.shruggie.tech/data/object-envelope.schema.json",
+  "title": "ObjectEnvelope",
+  "description": "Base schema for every standalone JSON object in the knowledge base. Concrete schemas (Person, Organization) extend this via allOf composition. The envelope is never instantiated directly. Concrete schemas set unevaluatedProperties: false at their own level to get strict property validation across the composed result.",
+  "type": "object",
+
+  "properties": {
+    "$schema": {
+      "description": "URL of the concrete schema. Narrowed to a const by each concrete schema.",
+      "type": "string",
+      "format": "uri"
+    },
+    "schema_version": {
+      "description": "Integer version of the concrete schema. Narrowed to a const by each concrete schema.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "id": {
+      "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/Uuid"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "container": {
+      "description": "Reference to the parent directory. Never null for standalone JSON objects.",
+      "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/NameIdReference"
+    },
+    "visibility": {
+      "type": "string",
+      "enum": ["public", "private"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "review", "published"]
+    },
+    "created": {
+      "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/IsoDate"
+    },
+    "modified": {
+      "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/IsoDate"
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/TagLabel"
+      },
+      "uniqueItems": true
+    },
+    "aliases": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/AliasLabel"
+      },
+      "uniqueItems": true
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.]+)?(\\+[a-zA-Z0-9.]+)?$"
+    },
+    "external_references": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/ExternalReference"
+      }
+    }
+  },
+
+  "required": [
+    "$schema",
+    "schema_version",
+    "id",
+    "name",
+    "description",
+    "container",
+    "visibility",
+    "status",
+    "created",
+    "modified"
+  ]
+}

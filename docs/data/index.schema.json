@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.shruggie.tech/data/index.schema.json",
+  "title": "DirectoryIndex",
+  "description": "Machine-generated table of contents for a directory. Produced by the pre-build script. Never hand-authored. Committed alongside content.",
+  "type": "object",
+
+  "properties": {
+    "$schema": {
+      "const": "https://schemas.shruggie.tech/data/index.schema.json"
+    },
+    "id": {
+      "description": "UUID of this directory (same as the directory's _index.md id).",
+      "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/Uuid"
+    },
+    "name": {
+      "type": "string"
+    },
+    "children": {
+      "description": "Immediate children of this directory (documents and sub-collections).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/Uuid"
+          },
+          "name": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["document", "collection"]
+          },
+          "filename": {
+            "description": "Basename of the file or directory.",
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": ["public", "private"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["draft", "review", "published"]
+          }
+        },
+        "required": ["id", "name", "type", "filename", "visibility", "status"]
+      }
+    },
+    "tags": {
+      "description": "Deduplicated union of all tags from descendant documents.",
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/TagLabel"
+      },
+      "uniqueItems": true
+    },
+    "document_count": {
+      "description": "Total documents (recursive) under this directory.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "collection_count": {
+      "description": "Total sub-collections (recursive) under this directory.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "edges": {
+      "description": "Deduplicated union of all link edges from descendant documents.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/Uuid"
+          },
+          "to": {
+            "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/Uuid"
+          }
+        },
+        "required": ["from", "to"]
+      },
+      "uniqueItems": true
+    }
+  },
+
+  "required": ["$schema", "id", "name", "children", "tags", "document_count", "collection_count", "edges"],
+  "unevaluatedProperties": false
+}

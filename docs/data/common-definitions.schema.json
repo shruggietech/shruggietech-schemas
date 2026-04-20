@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.shruggie.tech/data/common-definitions.schema.json",
+  "title": "CommonDefinitions",
+  "description": "Shared type definitions referenced by all ShruggieTech knowledge base schemas. This file is the single source of truth for Uuid, IsoDate, TagLabel, AliasLabel, NameIdReference, and ExternalReference. No other schema file may define these types inline; all must use $ref into this file.",
+
+  "$defs": {
+
+    "Uuid": {
+      "description": "RFC 4122 UUID in lowercase hexadecimal with standard 8-4-4-4-12 hyphenation. Version digit constrained to 1-5 to reject nil UUIDs and malformed placeholders. Assigned by the pre-build script. Permanent for the lifetime of the object.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+
+    "IsoDate": {
+      "description": "ISO 8601 calendar date in YYYY-MM-DD form. Time-of-day precision is intentionally omitted.",
+      "type": "string",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+
+    "TagLabel": {
+      "description": "Lowercase kebab-case topical label. ASCII letters, digits, and internal hyphens. Must begin with a letter. Open vocabulary; CI warns on tags appearing on fewer than three objects.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "minLength": 2,
+      "maxLength": 40
+    },
+
+    "AliasLabel": {
+      "description": "Alternative human-readable name for an object. Case-sensitive, free-form. May contain spaces, mixed case, and punctuation reflecting natural usage.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+
+    "NameIdReference": {
+      "description": "Cross-object reference expressed as a {name, id} pair. Authors populate 'name' with a human-readable slug or object name. The pre-build script resolves 'id' to the target's UUID. Resolution strategy is field-path-aware: 'container' fields resolve against directory-slug-space; all other fields resolve against object-name-space.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Human-readable identifier. For container references: directory name under data/. For cross-object references: the target object's 'name' field value.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "id": {
+          "description": "UUID of the referenced object. Null in authored form; populated by the pre-build script. Committed content with null id fails CI.",
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "required": ["name", "id"]
+    },
+
+    "ExternalReference": {
+      "description": "Outbound reference to a non-KB resource. Used by both Markdown frontmatter and standalone JSON objects.",
+      "type": "object",
+      "properties": {
+        "label": {
+          "description": "Human-readable link text.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "url": {
+          "description": "Absolute URL. Must use https.",
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        },
+        "kind": {
+          "description": "Classification of the external reference.",
+          "type": "string",
+          "enum": [
+            "spec",
+            "documentation",
+            "article",
+            "repository",
+            "tool",
+            "vendor",
+            "social_profile",
+            "internal_link",
+            "other"
+          ]
+        }
+      },
+      "required": ["label", "url", "kind"]
+    }
+  }
+}

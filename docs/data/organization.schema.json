@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.shruggie.tech/data/organization.schema.json",
+  "title": "Organization",
+  "description": "Profile of an organization relevant to ShruggieTech.",
+
+  "allOf": [
+    { "$ref": "https://schemas.shruggie.tech/data/object-envelope.schema.json" }
+  ],
+
+  "properties": {
+    "$schema": {
+      "const": "https://schemas.shruggie.tech/data/organization.schema.json"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "legal_name": {
+      "description": "Canonical legal name. May differ from envelope 'name' (DBA versus legal).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "org_type": {
+      "description": "Organization type.",
+      "type": "string",
+      "enum": ["registered-company", "nonprofit", "government", "other"]
+    },
+    "relationship_to_shruggietech": {
+      "description": "Why this org appears in the KB. Free-form, not an enum.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "website": {
+      "description": "Primary website URL. Elevated from external_references for direct UI rendering.",
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "logo_url": {
+      "description": "CDN URL for the organization's logo.",
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "headquarters": {
+      "description": "Free-form location string (e.g., 'Oak Ridge, TN', 'Remote').",
+      "type": "string",
+      "maxLength": 200
+    }
+  },
+
+  "required": ["legal_name", "org_type", "relationship_to_shruggietech"],
+  "unevaluatedProperties": false
+}

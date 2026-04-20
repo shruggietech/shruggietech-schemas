@@ -1,214 +1,97 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.shruggie.tech/data/frontmatter.schema.json",
   "title": "DocumentFrontmatter",
-  "description": "Schema version 1 of the ShruggieTech knowledge base document frontmatter format. Every Markdown document in the knowledge base declares a JSON frontmatter block at the top of the file (delimited by '---json' / '---' for gray-matter compatibility) that conforms to this contract. Consumed by the Next.js wiki renderer, the company MCP server, the Cytoscape graph visualizer, the Pagefind search indexer, and the CI validation pipeline.",
+  "description": "Schema for JSON frontmatter in Markdown knowledge base documents. Validated against every .md file under data/. Frontmatter is delimited by ---json and --- for gray-matter compatibility.",
   "type": "object",
 
-  "definitions": {
-
-    "Slug": {
-      "description": "A lowercase, kebab-case identifier composed of ASCII letters, digits, and internal hyphens. Must begin with a letter. Used for document identifiers, related-document references, alias entries, domain names, tag names, and any other slug-shaped value across the knowledge base.",
-      "type": "string",
-      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
-      "minLength": 2,
-      "maxLength": 80
-    },
-
-    "IsoDate": {
-      "description": "An ISO 8601 calendar date in YYYY-MM-DD form. Stored independently of git commit timestamps so the MCP server and graph layer can query semantic dates without consulting git history. Time-of-day precision is intentionally omitted; documents change at the granularity of days, not seconds.",
-      "type": "string",
-      "format": "date"
-    },
-
-    "ExternalReference": {
-      "description": "A pointer to an external resource cited or referenced by this document. Distinct from inline Markdown links in the body; this structure is for first-class references that should be surfaced in the wiki UI footer, exposed via the MCP server, and rendered as outbound link badges in the graph visualizer.",
-      "type": "object",
-      "properties": {
-        "label": {
-          "description": "Human-readable label for the reference. Displayed in document footers and as the visible text of the link in graph node tooltips.",
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 200
-        },
-        "url": {
-          "description": "Absolute URL to the external resource. Must include scheme (http or https).",
-          "type": "string",
-          "format": "uri"
-        },
-        "kind": {
-          "description": "Optional classification of the external resource, used by downstream consumers to apply icons or grouping in the wiki UI.\n\n  - 'spec': A formal specification or standards document.\n  - 'documentation': Reference documentation for a tool, library, or service.\n  - 'article': A blog post, news article, or other narrative content.\n  - 'repository': A source code repository.\n  - 'tool': An interactive tool, application, or utility.\n  - 'vendor': A vendor product page or commercial resource.\n  - 'internal_link': A link to another ShruggieTech property outside the knowledge base.\n  - 'other': Any reference that does not fit the above classifications.",
-          "type": "string",
-          "enum": ["spec", "documentation", "article", "repository", "tool", "vendor", "internal_link", "other"]
-        }
-      },
-      "required": ["label", "url"],
-      "additionalProperties": false
-    },
-
-    "ReviewBlock": {
-      "description": "Optional review lifecycle metadata. Allows the wiki UI and CI to surface documents that are due for periodic review. Documents without a review block are not subject to scheduled re-review.",
-      "type": "object",
-      "properties": {
-        "last_reviewed": {
-          "description": "Date the document was last formally reviewed for accuracy.",
-          "$ref": "#/definitions/IsoDate"
-        },
-        "reviewer": {
-          "description": "Identifier of the person who last reviewed the document. Convention is a short handle (for example 'william', 'natalie'). Defaults to the document's owner if omitted.",
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 80
-        },
-        "next_review_due": {
-          "description": "Date by which the document should be reviewed again. CI flags documents past this date as warnings during validation runs.",
-          "$ref": "#/definitions/IsoDate"
-        }
-      },
-      "additionalProperties": false
-    }
-  },
-
   "properties": {
-
     "$schema": {
-      "description": "Pinned reference to this schema. Enables IDE autocomplete and validation in editors that honor the '$schema' convention. The value is fixed to the canonical URL and validated as a constant.",
+      "description": "Must reference this schema's canonical URL.",
       "type": "string",
-      "format": "uri",
       "const": "https://schemas.shruggie.tech/data/frontmatter.schema.json"
     },
-
     "schema_version": {
-      "description": "The version of the frontmatter schema that this document declares conformance to. This document defines version 1. Distinct from the document's own content version (see 'version'). Breaking schema changes ship as a new schema file with an incremented version number; documents are migrated explicitly rather than coerced silently.",
+      "description": "Version of this schema. Bumped on breaking changes.",
       "type": "integer",
       "const": 1
     },
-
     "id": {
-      "description": "Globally unique stable identifier for this document within the knowledge base. Decoupled from file path and filename so that documents can be moved or renamed without breaking inbound references. Uniqueness across the entire corpus is enforced by the CI lint script, not by this schema. Once assigned, an id should never change; if a document needs to take over a previous document's identity, use the 'aliases' field instead.",
-      "$ref": "#/definitions/Slug"
+      "description": "UUID of this document. Assigned by pre-build, never changes.",
+      "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/Uuid"
     },
-
-    "title": {
-      "description": "Human-readable title of the document. Used as the page heading in the wiki UI, the node label in the graph visualizer, and the result title in MCP search responses.",
+    "name": {
+      "description": "Human-readable name. Used as the display title and as the resolution target for NameIdReference lookups in object-name-space.",
       "type": "string",
       "minLength": 1,
       "maxLength": 200
     },
-
     "description": {
-      "description": "One-sentence to one-paragraph summary of the document's purpose. Used as the snippet in MCP search results, the hover tooltip in graph nodes, the meta description in HTML head, and the preview text in wiki link cards. Should stand alone without surrounding context.",
+      "description": "One-sentence to one-paragraph summary.",
       "type": "string",
       "minLength": 1,
       "maxLength": 500
     },
-
-    "domain": {
-      "description": "The top-level organizational department or business sector this document belongs to (for example 'engineering', 'finance', 'client-delivery', 'brand'). Drives directory color-coding in the graph visualizer and is the primary axis for the MCP 'list_by_domain' tool. The canonical list of valid domains is maintained in a separate registry document and validated by the CI lint script, allowing the registry to evolve without schema migrations.",
-      "$ref": "#/definitions/Slug"
+    "container": {
+      "description": "Reference to the parent directory. Null only for the root data/_index.md.",
+      "oneOf": [
+        { "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/NameIdReference" },
+        { "type": "null" }
+      ]
     },
-
-    "tags": {
-      "description": "Cross-cutting topical labels that span multiple domains. A document about agent handoff protocols might be in the 'engineering' domain but tagged 'process', 'agents', and 'coordination'. Tags drive faceted filtering in the wiki UI, edge weighting in the graph visualizer (shared tags imply implicit relationships), and the MCP 'list_by_tag' tool. Tag vocabulary is open; the lint script flags previously-unseen tags as warnings to encourage consistency without blocking new concepts.",
-      "type": "array",
-      "uniqueItems": true,
-      "maxItems": 32,
-      "items": { "$ref": "#/definitions/Slug" }
-    },
-
-    "status": {
-      "description": "Lifecycle state of the document.\n\n  - 'draft': Work in progress. Excluded from public MCP responses and from public wiki surfaces by default.\n  - 'review': Content is complete and awaiting approval before publication.\n  - 'published': The canonical current state. Visible to all consumers permitted by the document's visibility tier.\n  - 'deprecated': Still readable but discouraged in favor of a replacement document. Should be paired with 'superseded_by' when applicable. The wiki UI displays a prominent deprecation banner.\n  - 'archived': Retained for historical reference only. Excluded from search and MCP responses by default; accessible only by direct ID lookup.",
-      "type": "string",
-      "enum": ["draft", "review", "published", "deprecated", "archived"]
-    },
-
     "visibility": {
-      "description": "Access tier for this document. Defaults to 'internal' if omitted.\n\n  - 'public': May be served by the public-facing MCP endpoint and is eligible for export to public surfaces.\n  - 'internal': Restricted to authenticated team members and the internal MCP tier.\n  - 'confidential': Restricted to a narrow access list and excluded from all MCP tiers by default.",
+      "description": "Access level. Effective visibility is the most restrictive value in the ancestor chain.",
       "type": "string",
-      "enum": ["public", "internal", "confidential"],
-      "default": "internal"
+      "enum": ["public", "private"]
     },
-
-    "owner": {
-      "description": "Identifier of the person primarily responsible for the document's accuracy and maintenance. Convention is a short handle (for example 'william', 'natalie'). The owner is the default reviewer if a 'review' block is present without an explicit reviewer.",
+    "status": {
+      "description": "Publication state.",
       "type": "string",
-      "minLength": 1,
-      "maxLength": 80
+      "enum": ["draft", "review", "published"]
     },
-
-    "contributors": {
-      "description": "Additional people who have meaningfully contributed to the document beyond the owner. Surfaced in the wiki UI footer and used by analytics tooling to track collaboration patterns. Order is not significant.",
+    "created": {
+      "description": "Date this document was first created.",
+      "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/IsoDate"
+    },
+    "modified": {
+      "description": "Date this document was last substantively modified.",
+      "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/IsoDate"
+    },
+    "tags": {
+      "description": "Topical labels. Open vocabulary.",
       "type": "array",
-      "uniqueItems": true,
-      "maxItems": 32,
+      "maxItems": 12,
       "items": {
-        "type": "string",
-        "minLength": 1,
-        "maxLength": 80
+        "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/TagLabel"
+      },
+      "uniqueItems": true
+    },
+    "aliases": {
+      "description": "Alternative names for this document. Case-sensitive free-form strings.",
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/AliasLabel"
+      },
+      "uniqueItems": true
+    },
+    "version": {
+      "description": "Semantic version of the document content, if applicable.",
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.]+)?(\\+[a-zA-Z0-9.]+)?$"
+    },
+    "external_references": {
+      "description": "Outbound references to non-KB resources.",
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/ExternalReference"
       }
     },
-
-    "created": {
-      "description": "Date the document was first authored, regardless of when it was committed to git. Used for chronological sorting and 'recently created' surfaces in the wiki UI.",
-      "$ref": "#/definitions/IsoDate"
-    },
-
-    "modified": {
-      "description": "Date the document's content was last meaningfully revised. Should be updated whenever the body changes substantively; trivial edits (typo fixes, formatting adjustments) do not require an update. Used for 'recently changed' surfaces and stale-content detection.",
-      "$ref": "#/definitions/IsoDate"
-    },
-
-    "version": {
-      "description": "Optional semantic version of the document content (distinct from 'schema_version', which versions the frontmatter contract). Recommended for specifications, contracts, and other documents where breaking semantic changes need to be tracked. Major version increments indicate breaking semantic changes; minor and patch follow standard semver conventions for additions and corrections respectively.",
+    "document_template": {
+      "description": "Identifier of a body template this document must conform to. Kebab-case. Template validation is a post-v1 feature; the field is reserved now.",
       "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+$"
-    },
-
-    "related": {
-      "description": "Explicit list of related document identifiers. Each entry must reference an existing document in the knowledge base; referential integrity is enforced by the CI lint script. This field is the authoritative source of edges in the Cytoscape graph visualization. Relationships declared here are undirected and untyped; for typed relationships use the dedicated fields ('parent', 'supersedes', 'superseded_by').",
-      "type": "array",
-      "uniqueItems": true,
-      "maxItems": 64,
-      "items": { "$ref": "#/definitions/Slug" }
-    },
-
-    "parent": {
-      "description": "Optional identifier of the document that serves as the hierarchical parent of this one. Enables tree-style navigation in the wiki UI and parent-child clustering in the graph visualizer. A document may have at most one parent.",
-      "$ref": "#/definitions/Slug"
-    },
-
-    "supersedes": {
-      "description": "List of document identifiers that this document replaces. Used to render deprecation chains in the wiki UI and to surface lineage in the graph visualizer. The CI lint script may automatically set 'superseded_by' on referenced documents to maintain bidirectional consistency.",
-      "type": "array",
-      "uniqueItems": true,
-      "maxItems": 16,
-      "items": { "$ref": "#/definitions/Slug" }
-    },
-
-    "superseded_by": {
-      "description": "Identifier of the document that has replaced this one. Should be set whenever 'status' is 'deprecated' to direct readers to the current canonical version. The wiki UI displays a prominent banner linking to the superseding document.",
-      "$ref": "#/definitions/Slug"
-    },
-
-    "aliases": {
-      "description": "Alternative identifiers by which this document may be referenced. Used to preserve inbound link integrity when a document's primary identifier is changed and to allow a single document to satisfy lookups for multiple historical names. The MCP server resolves alias lookups to the canonical identifier transparently.",
-      "type": "array",
-      "uniqueItems": true,
-      "maxItems": 16,
-      "items": { "$ref": "#/definitions/Slug" }
-    },
-
-    "external_references": {
-      "description": "Structured list of external resources cited or referenced by this document. Distinct from inline Markdown links in the body; this field is for first-class references that should be surfaced in the wiki UI footer and exposed via the MCP server's document detail responses.",
-      "type": "array",
-      "uniqueItems": false,
-      "maxItems": 64,
-      "items": { "$ref": "#/definitions/ExternalReference" }
-    },
-
-    "review": {
-      "description": "Optional review lifecycle metadata block. Documents without a review block are not subject to scheduled re-review.",
-      "$ref": "#/definitions/ReviewBlock"
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
     }
   },
 
@@ -216,11 +99,14 @@
     "$schema",
     "schema_version",
     "id",
-    "title",
-    "domain",
+    "name",
+    "description",
+    "container",
+    "visibility",
     "status",
     "created",
     "modified"
   ],
-  "additionalProperties": false
+
+  "unevaluatedProperties": false
 }

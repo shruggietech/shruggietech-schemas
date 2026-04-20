@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.shruggie.tech/data/schema-manifest.json",
+  "title": "SchemaManifest",
+  "description": "Allowlist of every recognized schema in the knowledge base. Every $schema URL declared in any document must appear here or validation fails.",
+  "type": "object",
+
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "schemas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "description": "Canonical $schema URL.",
+            "type": "string",
+            "format": "uri"
+          },
+          "file": {
+            "description": "Relative path from repo root to the schema file.",
+            "type": "string"
+          },
+          "purpose": {
+            "description": "One-line description.",
+            "type": "string"
+          }
+        },
+        "required": ["url", "file", "purpose"]
+      }
+    }
+  },
+
+  "required": ["version", "schemas"],
+  "unevaluatedProperties": false
+}

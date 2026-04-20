@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.shruggie.tech/data/person.schema.json",
+  "title": "Person",
+  "description": "Profile of a person relevant to ShruggieTech. Stable identity and role data only; per-interaction prep notes belong in the future CRM, not here.",
+
+  "allOf": [
+    { "$ref": "https://schemas.shruggie.tech/data/object-envelope.schema.json" }
+  ],
+
+  "properties": {
+    "$schema": {
+      "const": "https://schemas.shruggie.tech/data/person.schema.json"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "full_name": {
+      "description": "Canonical full name.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "role": {
+      "description": "Short free-form phrase describing what this person does. Not an enum.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "affiliations": {
+      "description": "References to Organization objects. Primary affiliation is the first element by convention (documented, not schema-enforced).",
+      "type": "array",
+      "items": {
+        "$ref": "https://schemas.shruggie.tech/data/common-definitions.schema.json#/$defs/NameIdReference"
+      }
+    },
+    "avatar_url": {
+      "description": "HTTPS URL to a profile image.",
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    }
+  },
+
+  "required": ["full_name", "role"],
+  "unevaluatedProperties": false
+}
