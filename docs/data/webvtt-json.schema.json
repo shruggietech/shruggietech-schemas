@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.shruggie.tech/webvtt-json/1.0/webvtt-json.schema.json",
+  "$id": "https://schemas.shruggie.tech/data/webvtt-json.schema.json",
   "title": "ShruggieTech WebVTT-to-JSON Document",
   "description": "Validation schema for the mapped JSON document emitted by ConvertFrom-WebVtt.ps1 (schemaVersion 1.0). The producer guarantees a fixed shape: every documented key is always present, and data a given source file does not use is rendered as an empty array, an empty object, or null rather than omitted. This schema therefore marks every property as required and forbids unknown properties at every fixed object level. The two dynamic maps (header.metadata and the settings maps) accept arbitrary additional keys by design. A document whose schemaVersion differs from 1.0 should be validated against the schema bearing the matching version.",
   "type": "object",
