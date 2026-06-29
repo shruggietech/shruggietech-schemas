@@ -200,5 +200,15 @@
                 "url": "https://www.synctech.com.au/sms-backup-restore/"
             }
         ]
+    },
+    {
+        "id": "webvtt-json",
+        "title": "ShruggieTech WebVTT-to-JSON Document",
+        "version": "1.0",
+        "description": "Validation schema for the mapped JSON document emitted by ConvertFrom-WebVtt.ps1. The converter guarantees a fixed shape: every documented key is always present, with unused data rendered as an empty array, empty object, or null rather than omitted.",
+        "status": "current",
+        "file": "webvtt-json.schema.json",
+        "notes": [],
+        "externalLinks": []
     }
 ]

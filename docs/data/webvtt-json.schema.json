@@ -1,0 +1,509 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.shruggie.tech/webvtt-json/1.0/webvtt-json.schema.json",
+  "title": "ShruggieTech WebVTT-to-JSON Document",
+  "description": "Validation schema for the mapped JSON document emitted by ConvertFrom-WebVtt.ps1 (schemaVersion 1.0). The producer guarantees a fixed shape: every documented key is always present, and data a given source file does not use is rendered as an empty array, an empty object, or null rather than omitted. This schema therefore marks every property as required and forbids unknown properties at every fixed object level. The two dynamic maps (header.metadata and the settings maps) accept arbitrary additional keys by design. A document whose schemaVersion differs from 1.0 should be validated against the schema bearing the matching version.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "source",
+    "header",
+    "regions",
+    "styles",
+    "notes",
+    "cues",
+    "stats"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Schema contract version emitted by the converter. This schema validates documents declaring version 1.0 only.",
+      "examples": ["1.0"]
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "header": {
+      "$ref": "#/$defs/header"
+    },
+    "regions": {
+      "type": "array",
+      "description": "REGION definition blocks from the source, in source order. Empty when the file declared no regions.",
+      "items": { "$ref": "#/$defs/region" }
+    },
+    "styles": {
+      "type": "array",
+      "description": "STYLE (CSS) blocks from the source, in source order. Empty when the file declared no styles.",
+      "items": { "$ref": "#/$defs/style" }
+    },
+    "notes": {
+      "type": "array",
+      "description": "Standalone NOTE comment blocks from the source, in source order. Cue-adjacent and file-level notes are both captured. Empty when the file declared no notes.",
+      "items": { "$ref": "#/$defs/note" }
+    },
+    "cues": {
+      "type": "array",
+      "description": "The cue blocks from the source, in source order, one object per source cue. The conversion is faithful and 1:1: nothing is de-duplicated, merged, re-timed, or dropped, so overlapping rolling cues (as produced by YouTube auto-captioning) are all preserved. Empty when the file declared no cues.",
+      "items": { "$ref": "#/$defs/cue" }
+    },
+    "stats": {
+      "$ref": "#/$defs/stats"
+    }
+  },
+  "$defs": {
+    "webvttTimestamp": {
+      "type": "string",
+      "title": "Normalized WebVTT timestamp",
+      "description": "A timestamp normalized to HH:MM:SS.mmm. Hours are always present (two or more digits, widening for long media); minutes and seconds are two digits in the range 00-59; milliseconds are exactly three digits. Source timestamps written without an hours field (MM:SS.mmm) are normalized to this form.",
+      "pattern": "^[0-9]{2,}:[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}$",
+      "examples": ["00:00:02.000", "00:21:30.200", "100:00:00.000"]
+    },
+    "nonNegativeSeconds": {
+      "type": "number",
+      "minimum": 0,
+      "description": "A time value in seconds, rounded to millisecond precision (three decimal places).",
+      "examples": [2.0, 3.669, 1288.2]
+    },
+    "afterCue": {
+      "type": "integer",
+      "minimum": -1,
+      "description": "Positional context for a non-cue block: the zero-based index of the last cue that appeared before this block in source order, or -1 if the block preceded all cues.",
+      "examples": [-1, 0, 12]
+    },
+    "settingsMap": {
+      "type": "object",
+      "title": "Parsed setting list",
+      "description": "A whitespace-separated 'name:value' list parsed into a map. Each value is the substring after the first colon (a string); a bare token carrying no colon is represented as the boolean true. Canonical WebVTT keys are documented below, but any additional key the source carried is preserved, so additional properties are permitted.",
+      "properties": {
+        "vertical": {
+          "type": ["string", "boolean"],
+          "description": "Writing direction for vertical text. Conventionally 'rl' (right-to-left) or 'lr' (left-to-right). Stored verbatim from the source.",
+          "examples": ["rl", "lr"]
+        },
+        "line": {
+          "type": ["string", "boolean"],
+          "description": "Line position of the cue box, as a percentage or line number, optionally with an alignment suffix. Stored verbatim.",
+          "examples": ["0%", "-1", "50%,start"]
+        },
+        "position": {
+          "type": ["string", "boolean"],
+          "description": "Indentation/position of the cue text within its line, as a percentage, optionally with a position-alignment suffix. Stored verbatim.",
+          "examples": ["0%", "10%", "50%,line-left"]
+        },
+        "size": {
+          "type": ["string", "boolean"],
+          "description": "Width of the cue box as a percentage. Stored verbatim.",
+          "examples": ["40%", "100%"]
+        },
+        "align": {
+          "type": ["string", "boolean"],
+          "description": "Alignment of the cue text within the cue box. Conventionally one of start, center, middle, end, left, right. Stored verbatim.",
+          "examples": ["start", "center", "end"]
+        },
+        "region": {
+          "type": ["string", "boolean"],
+          "description": "Identifier of the REGION this cue is rendered into. Stored verbatim.",
+          "examples": ["bill", "rLowerLeft"]
+        }
+      },
+      "additionalProperties": {
+        "type": ["string", "boolean"],
+        "description": "Any further setting key present in the source. A string value is the text after the first colon; true denotes a valueless token."
+      },
+      "examples": [
+        { "align": "start", "position": "0%" },
+        { "region": "bill" },
+        {}
+      ]
+    },
+    "regionSettingsMap": {
+      "type": "object",
+      "title": "Parsed REGION setting list",
+      "description": "The settings of a REGION block parsed into a map, using the same 'name:value' rules as settingsMap. Canonical region keys are documented below; additional keys are preserved.",
+      "properties": {
+        "id": {
+          "type": ["string", "boolean"],
+          "description": "The region identifier referenced by a cue's 'region' setting.",
+          "examples": ["bill", "rLowerLeft"]
+        },
+        "width": {
+          "type": ["string", "boolean"],
+          "description": "Region width as a percentage of the video viewport.",
+          "examples": ["40%"]
+        },
+        "lines": {
+          "type": ["string", "boolean"],
+          "description": "Height of the region expressed as a number of lines.",
+          "examples": ["3"]
+        },
+        "regionanchor": {
+          "type": ["string", "boolean"],
+          "description": "Anchor point within the region, as an 'x%,y%' pair.",
+          "examples": ["0%,100%"]
+        },
+        "viewportanchor": {
+          "type": ["string", "boolean"],
+          "description": "Anchor point within the viewport that the region anchor is aligned to, as an 'x%,y%' pair.",
+          "examples": ["10%,90%"]
+        },
+        "scroll": {
+          "type": ["string", "boolean"],
+          "description": "Scroll behavior of the region. Conventionally 'up' or absent.",
+          "examples": ["up"]
+        }
+      },
+      "additionalProperties": {
+        "type": ["string", "boolean"]
+      },
+      "examples": [
+        {
+          "id": "bill",
+          "width": "40%",
+          "lines": "3",
+          "regionanchor": "0%,100%",
+          "viewportanchor": "10%,90%",
+          "scroll": "up"
+        }
+      ]
+    },
+    "source": {
+      "type": "object",
+      "title": "Conversion provenance",
+      "description": "Provenance of the conversion: where the input came from, what was detected about its encoding, and when it was converted.",
+      "required": [
+        "fileName",
+        "filePath",
+        "byteOrderMark",
+        "lineEnding",
+        "convertedAtUtc",
+        "converter"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "fileName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The input file's name (without directory).",
+          "examples": ["Who_Really_Controls_the_Internet-[XnwUX1deRT4].en.vtt"]
+        },
+        "filePath": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The absolute path of the input file as resolved on the converting host. Path separators reflect that host's operating system.",
+          "examples": ["C:\\Users\\h8rt3rmin8r\\Videos\\1782739224827\\Who_Really_Controls_the_Internet-[XnwUX1deRT4].en.vtt"]
+        },
+        "byteOrderMark": {
+          "type": "boolean",
+          "description": "True if the input began with a UTF-8 byte-order mark (EF BB BF), which was stripped before parsing.",
+          "examples": [false, true]
+        },
+        "lineEnding": {
+          "type": "string",
+          "enum": ["LF", "CRLF", "CR", "MIXED", "NONE"],
+          "description": "The line-ending style detected in the input before normalization. LF, CRLF, or CR when a single style dominates; MIXED when both CRLF and lone CR occur; NONE when the input contained no line terminators.",
+          "examples": ["LF", "CRLF"]
+        },
+        "convertedAtUtc": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$",
+          "description": "UTC timestamp of the conversion, in ISO-8601 form with millisecond precision and a literal Z suffix.",
+          "examples": ["2026-06-29T14:01:05.312Z"]
+        },
+        "converter": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the tool that produced the document.",
+          "examples": ["ConvertFrom-WebVtt.ps1"]
+        }
+      }
+    },
+    "header": {
+      "type": "object",
+      "title": "WebVTT file header",
+      "description": "The WebVTT file header: the signature, any free-text description on the signature line, and the header metadata lines that precede the first blank line.",
+      "required": ["magic", "description", "metadata", "metadataRaw"],
+      "additionalProperties": false,
+      "properties": {
+        "magic": {
+          "type": "string",
+          "const": "WEBVTT",
+          "description": "The file signature. Always the literal string WEBVTT for a valid WebVTT file."
+        },
+        "description": {
+          "type": ["string", "null"],
+          "description": "Free text that followed WEBVTT on the first line (separated by whitespace), or null when none was present.",
+          "examples": [null, "- Some title here"]
+        },
+        "metadata": {
+          "type": "object",
+          "title": "Parsed header metadata",
+          "description": "Header metadata lines parsed into a key-to-value map. A line is parsed when it matches 'Key: Value' or 'Key=Value'; the key is trimmed of surrounding whitespace. Common keys are Kind and Language, but any key the file declared is preserved, so additional properties are permitted. Empty when no header metadata line could be parsed.",
+          "properties": {
+            "Kind": {
+              "type": "string",
+              "description": "The track kind declared in the header. Conventionally one of captions, subtitles, descriptions, chapters, or metadata.",
+              "examples": ["captions", "subtitles"]
+            },
+            "Language": {
+              "type": "string",
+              "description": "The BCP-47 language tag declared in the header.",
+              "examples": ["en", "en-US"]
+            }
+          },
+          "additionalProperties": {
+            "type": "string",
+            "description": "The trimmed value of any further 'Key: Value' or 'Key=Value' header line."
+          },
+          "examples": [
+            { "Kind": "captions", "Language": "en" },
+            {}
+          ]
+        },
+        "metadataRaw": {
+          "type": "array",
+          "description": "The raw header metadata lines, verbatim and in order, including any that did not parse into the metadata map.",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["Kind: captions", "Language: en"]]
+        }
+      }
+    },
+    "region": {
+      "type": "object",
+      "title": "REGION block",
+      "description": "A WebVTT REGION definition block.",
+      "required": ["id", "settings", "raw", "afterCue"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": ["string", "null"],
+          "description": "The region's 'id' setting, or null if the block declared none.",
+          "examples": ["bill", null]
+        },
+        "settings": {
+          "$ref": "#/$defs/regionSettingsMap"
+        },
+        "raw": {
+          "type": "string",
+          "description": "The region block body (the lines following the REGION keyword), verbatim, with source lines joined by a newline.",
+          "examples": ["id:bill width:40% lines:3 regionanchor:0%,100% viewportanchor:10%,90% scroll:up"]
+        },
+        "afterCue": {
+          "$ref": "#/$defs/afterCue"
+        }
+      }
+    },
+    "style": {
+      "type": "object",
+      "title": "STYLE block",
+      "description": "A WebVTT STYLE block carrying CSS.",
+      "required": ["css", "afterCue"],
+      "additionalProperties": false,
+      "properties": {
+        "css": {
+          "type": "string",
+          "description": "The CSS payload of the STYLE block (the lines following the STYLE keyword), verbatim, with source lines joined by a newline.",
+          "examples": ["::cue(.narration) { font-style: italic; }"]
+        },
+        "afterCue": {
+          "$ref": "#/$defs/afterCue"
+        }
+      }
+    },
+    "note": {
+      "type": "object",
+      "title": "NOTE block",
+      "description": "A standalone WebVTT NOTE comment block.",
+      "required": ["text", "afterCue"],
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The note body, with the leading NOTE keyword removed and surrounding whitespace trimmed. Internal newlines are preserved for multi-line notes.",
+          "examples": ["This is a multi-line\nauthor comment.", "a trailing standalone note"]
+        },
+        "afterCue": {
+          "$ref": "#/$defs/afterCue"
+        }
+      }
+    },
+    "token": {
+      "type": "object",
+      "title": "Word/phrase timing token",
+      "description": "A unit of word- or phrase-level timing derived from inline <timestamp> tags in a cue payload. The governing time is the inline timestamp that precedes the text segment; the segment before the first inline timestamp inherits the cue start time.",
+      "required": ["time", "timeSeconds", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "time": {
+          "$ref": "#/$defs/webvttTimestamp",
+          "description": "The governing timestamp for this token, normalized to HH:MM:SS.mmm."
+        },
+        "timeSeconds": {
+          "$ref": "#/$defs/nonNegativeSeconds",
+          "description": "The governing timestamp expressed in seconds (millisecond precision)."
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The token text, with all markup and inline timestamp tags removed, HTML entities decoded, and internal whitespace collapsed to single spaces and trimmed. Tokens with empty text are not emitted.",
+          "examples": ["Hi,", "today", "tomorrow."]
+        }
+      }
+    },
+    "cue": {
+      "type": "object",
+      "title": "Cue block",
+      "description": "A single WebVTT cue: its identity, timing, positioning, payload (in both verbatim and plain-text forms), any speaker labels, and any word-level timing.",
+      "required": [
+        "index",
+        "identifier",
+        "start",
+        "end",
+        "startSeconds",
+        "endSeconds",
+        "durationSeconds",
+        "settings",
+        "settingsRaw",
+        "text",
+        "lines",
+        "rawPayload",
+        "voices",
+        "tokens"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The zero-based ordinal of this cue among all cues, in source order.",
+          "examples": [0, 1, 1254]
+        },
+        "identifier": {
+          "type": ["string", "null"],
+          "description": "The cue identifier line that preceded the timing line, or null if the cue had none. May be a sequential number, a chapter title, or any other label.",
+          "examples": [null, "1", "intro", "Slide 2"]
+        },
+        "start": {
+          "$ref": "#/$defs/webvttTimestamp",
+          "description": "The cue start time, normalized to HH:MM:SS.mmm."
+        },
+        "end": {
+          "$ref": "#/$defs/webvttTimestamp",
+          "description": "The cue end time, normalized to HH:MM:SS.mmm."
+        },
+        "startSeconds": {
+          "$ref": "#/$defs/nonNegativeSeconds",
+          "description": "The cue start time in seconds (millisecond precision)."
+        },
+        "endSeconds": {
+          "$ref": "#/$defs/nonNegativeSeconds",
+          "description": "The cue end time in seconds (millisecond precision). Greater than or equal to startSeconds."
+        },
+        "durationSeconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "endSeconds minus startSeconds, in seconds (millisecond precision). May be 0 for zero-length cues.",
+          "examples": [1.669, 0.01, 3.0]
+        },
+        "settings": {
+          "$ref": "#/$defs/settingsMap"
+        },
+        "settingsRaw": {
+          "type": ["string", "null"],
+          "description": "The raw cue settings string that followed the end timestamp on the timing line, or null if there were none.",
+          "examples": ["align:start position:0%", null]
+        },
+        "text": {
+          "type": "string",
+          "description": "The plain-text payload: all markup and inline timestamp tags removed, HTML entities decoded, and source payload lines joined by a newline. May contain newlines, and may contain whitespace-only lines preserved faithfully from the source (as produced by some YouTube auto-captions).",
+          "examples": [" \nHi, today I want to talk to you all", "watching and I'll see you tomorrow.\nPeace."]
+        },
+        "lines": {
+          "type": "array",
+          "description": "The plain-text payload split per source line, each line independently stripped of markup and decoded. The element count matches the number of source payload lines.",
+          "items": {
+            "type": "string"
+          },
+          "examples": [[" ", "Hi, today I want to talk to you all"]]
+        },
+        "rawPayload": {
+          "type": "string",
+          "description": "The cue payload exactly as it appeared in the source, with markup and inline timestamp tags intact and source lines joined by a newline.",
+          "examples": [" \nHi,<00:00:02.560><c> today</c><00:00:02.800><c> I</c>"]
+        },
+        "voices": {
+          "type": "array",
+          "description": "Distinct speaker names extracted from <v ...> voice tags in the cue payload, in first-seen order. Leading class tokens (for example '.loud') are stripped, leaving the speaker label. Empty when the cue carried no voice tags.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "examples": [[], ["Roger Bannister"]]
+        },
+        "tokens": {
+          "type": "array",
+          "description": "Word/phrase-level timing derived from inline <timestamp> tags in the payload, in order. Empty when the cue carried no inline timing.",
+          "items": {
+            "$ref": "#/$defs/token"
+          }
+        }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "title": "Summary statistics",
+      "description": "Summary counters computed across the document.",
+      "required": [
+        "cueCount",
+        "regionCount",
+        "styleCount",
+        "noteCount",
+        "hasWordLevelTiming",
+        "mediaSpanSeconds"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "cueCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of cues. Equal to the length of the cues array.",
+          "examples": [1255]
+        },
+        "regionCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of REGION blocks. Equal to the length of the regions array.",
+          "examples": [0, 1]
+        },
+        "styleCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of STYLE blocks. Equal to the length of the styles array.",
+          "examples": [0, 1]
+        },
+        "noteCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of standalone NOTE blocks. Equal to the length of the notes array.",
+          "examples": [0, 2]
+        },
+        "hasWordLevelTiming": {
+          "type": "boolean",
+          "description": "True if any cue produced one or more timing tokens.",
+          "examples": [true, false]
+        },
+        "mediaSpanSeconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "The span from the earliest cue start to the latest cue end, in seconds (millisecond precision). 0 when there are no cues.",
+          "examples": [1288.2, 0]
+        }
+      }
+    }
+  }
+}
