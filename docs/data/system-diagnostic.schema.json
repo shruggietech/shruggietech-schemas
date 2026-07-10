@@ -1,0 +1,840 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.shruggie.tech/data/system-diagnostic.schema.json",
+  "title": "ShruggieTech System Diagnostic Document",
+  "description": "Validation schema for the JSON document emitted by Get-SystemDiagnostic.ps1 (schemaVersion 1.0). The producer guarantees a fixed shape: every documented key is always present, and data a given host does not expose (a missing WMI class, an unreadable log, absent firmware sensors) is rendered as an empty array, an empty object, or null rather than omitted. This schema therefore marks every property as required and forbids unknown properties at every object level. Because collection is best-effort by design, a null scalar or an empty array is a valid, expected value throughout and does not indicate an invalid document; it indicates the source was unavailable or empty on that host. Array element order is source or query order and carries no contract. A document whose schemaVersion differs from 1.0 should be validated against the schema bearing the matching version.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "_metadata",
+    "hardware",
+    "drivers",
+    "errorEvents",
+    "installedSoftware",
+    "crashArtifacts"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Schema contract version emitted by the collector. This schema validates documents declaring version 1.0 only. Distinct from _metadata.scriptVersion, which is the version of the collector tool itself.",
+      "examples": ["1.0"]
+    },
+    "_metadata": {
+      "$ref": "#/$defs/metadata"
+    },
+    "hardware": {
+      "$ref": "#/$defs/hardware"
+    },
+    "drivers": {
+      "type": "array",
+      "description": "Signed-driver inventory from Win32_PnPSignedDriver, one object per device that reported both a device name and a driver version, sorted by device class then device name. Empty only if the class returned nothing (rare on a healthy host).",
+      "items": { "$ref": "#/$defs/driver" }
+    },
+    "errorEvents": {
+      "$ref": "#/$defs/errorEvents"
+    },
+    "installedSoftware": {
+      "type": "array",
+      "description": "Installed applications read from the registry uninstall hives (HKLM 64-bit, HKLM WOW6432Node, HKCU), deduplicated on name plus version and sorted by name. Win32_Product is deliberately not used. Empty when no uninstall entries carried a display name.",
+      "items": { "$ref": "#/$defs/software" }
+    },
+    "crashArtifacts": {
+      "$ref": "#/$defs/crashArtifacts"
+    }
+  },
+  "$defs": {
+    "isoTimestamp": {
+      "type": "string",
+      "title": "ISO 8601 timestamp",
+      "description": "A timestamp the producer generates directly via .NET round-trip ('o') formatting. Carries a fractional-second component and either a 'Z' suffix (for UTC values) or a numeric offset (for local values).",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$",
+      "examples": ["2026-07-10T14:01:05.3120000Z", "2026-07-10T10:01:05.3120000-04:00"]
+    },
+    "isoTimestampOrNull": {
+      "type": ["string", "null"],
+      "title": "ISO 8601 timestamp or null",
+      "description": "A timestamp derived from a system source (WMI, an event record, a file time). Normalized to ISO 8601 round-trip form when the source value parses as a date, passed through as the original string in the rare case it does not, and null when the source did not supply the value. The 'format' keyword is advisory here; no strict pattern is enforced because a non-date pass-through string is a legitimate value.",
+      "format": "date-time",
+      "examples": [null, "2024-05-19T00:00:00.0000000-04:00", "2026-07-10T03:14:22.0000000-04:00"]
+    },
+    "metadata": {
+      "type": "object",
+      "title": "Runtime metadata",
+      "description": "Provenance and environment of the collection run: when it ran, on what host, under what identity and privilege, and the parameters that governed it.",
+      "required": [
+        "collectedAtLocal",
+        "collectedAtUtc",
+        "hostName",
+        "userName",
+        "isElevated",
+        "scriptName",
+        "scriptVersion",
+        "psVersion",
+        "psEdition",
+        "osArchitecture",
+        "is64BitProcess",
+        "lastBootUpTime",
+        "uptime",
+        "timeZone",
+        "culture",
+        "executionPolicy",
+        "lookbackDays",
+        "includeWarnings"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "collectedAtLocal": {
+          "$ref": "#/$defs/isoTimestamp",
+          "description": "Wall-clock time of collection in the host's local timezone, with offset."
+        },
+        "collectedAtUtc": {
+          "$ref": "#/$defs/isoTimestamp",
+          "description": "The same instant expressed in UTC, with a Z suffix."
+        },
+        "hostName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The machine name (COMPUTERNAME) of the collecting host.",
+          "examples": ["RIG-01"]
+        },
+        "userName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The identity that ran the collector, as DOMAIN\\User.",
+          "examples": ["RIG-01\\william"]
+        },
+        "isElevated": {
+          "type": "boolean",
+          "description": "True if the process ran with Administrator rights. When false, some Security-log and firmware sources may be thinner or absent.",
+          "examples": [true, false]
+        },
+        "scriptName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The collector's file name.",
+          "examples": ["Get-SystemDiagnostic.ps1"]
+        },
+        "scriptVersion": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The collector tool's own semantic version, independent of the schema contract version.",
+          "examples": ["1.0.0"]
+        },
+        "psVersion": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The PowerShell engine version the collector ran under.",
+          "examples": ["5.1.19041.4046", "7.4.2"]
+        },
+        "psEdition": {
+          "type": "string",
+          "enum": ["Desktop", "Core"],
+          "description": "The PowerShell edition: Desktop for Windows PowerShell 5.1, Core for PowerShell 7+.",
+          "examples": ["Desktop", "Core"]
+        },
+        "osArchitecture": {
+          "type": ["string", "null"],
+          "description": "The process architecture from PROCESSOR_ARCHITECTURE.",
+          "examples": ["AMD64", "ARM64"]
+        },
+        "is64BitProcess": {
+          "type": "boolean",
+          "description": "True if the collector ran as a 64-bit process.",
+          "examples": [true]
+        },
+        "lastBootUpTime": {
+          "$ref": "#/$defs/isoTimestampOrNull",
+          "description": "The host's last boot time as reported by the OS, or null if the OS query failed."
+        },
+        "uptime": {
+          "type": ["string", "null"],
+          "description": "Elapsed time since last boot, formatted as a .NET TimeSpan string ([d.]hh:mm:ss[.fffffff]). Null if last boot time was unavailable.",
+          "examples": ["1.02:14:33.1200000", "06:41:09"]
+        },
+        "timeZone": {
+          "type": "string",
+          "description": "The host's local timezone identifier.",
+          "examples": ["Eastern Standard Time"]
+        },
+        "culture": {
+          "type": "string",
+          "description": "The active culture name of the collecting session.",
+          "examples": ["en-US"]
+        },
+        "executionPolicy": {
+          "type": "string",
+          "description": "The effective PowerShell execution policy at collection time.",
+          "examples": ["RemoteSigned", "Bypass"]
+        },
+        "lookbackDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365,
+          "description": "The event-log look-back window used for this run, in days.",
+          "examples": [30, 14]
+        },
+        "includeWarnings": {
+          "type": "boolean",
+          "description": "True if Warning-level events were included alongside Critical and Error.",
+          "examples": [false, true]
+        }
+      }
+    },
+    "hardware": {
+      "type": "object",
+      "title": "Categorized hardware inventory",
+      "description": "The host's hardware and platform state, grouped by category. Every category key is always present; a category the host does not populate is an empty array or an object of nulls.",
+      "required": [
+        "system",
+        "operatingSystem",
+        "cpu",
+        "gpu",
+        "memoryModules",
+        "motherboard",
+        "bios",
+        "disks",
+        "volumes",
+        "networkAdapters",
+        "thermalZones"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "system": {
+          "type": "object",
+          "title": "System summary",
+          "description": "Chassis-level identity and totals from Win32_ComputerSystem.",
+          "required": [
+            "manufacturer",
+            "model",
+            "systemFamily",
+            "systemType",
+            "totalPhysicalMemGB",
+            "numberOfProcessors"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "manufacturer": { "type": ["string", "null"], "examples": ["Micro-Star International Co., Ltd."] },
+            "model": { "type": ["string", "null"], "examples": ["MS-7D25"] },
+            "systemFamily": { "type": ["string", "null"] },
+            "systemType": { "type": ["string", "null"], "examples": ["x64-based PC"] },
+            "totalPhysicalMemGB": {
+              "type": ["number", "null"],
+              "minimum": 0,
+              "description": "Total installed physical memory in gibibytes, rounded to two places.",
+              "examples": [64.0, 31.93]
+            },
+            "numberOfProcessors": {
+              "type": ["integer", "null"],
+              "minimum": 0,
+              "description": "Count of physical processor packages (sockets), not cores."
+            }
+          }
+        },
+        "operatingSystem": {
+          "type": "object",
+          "title": "Operating system",
+          "description": "OS identity from Win32_OperatingSystem, enriched with the friendly release label and update build revision read from the registry.",
+          "required": [
+            "caption",
+            "releaseLabel",
+            "version",
+            "buildNumber",
+            "updateBuildRevision",
+            "architecture",
+            "installDate",
+            "lastBootUpTime",
+            "registeredUser"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "caption": { "type": ["string", "null"], "examples": ["Microsoft Windows 11 Pro"] },
+            "releaseLabel": {
+              "type": ["string", "null"],
+              "description": "The marketing release label (DisplayVersion) from the registry, for example 23H2.",
+              "examples": ["23H2", "24H2"]
+            },
+            "version": { "type": ["string", "null"], "examples": ["10.0.22631"] },
+            "buildNumber": { "type": ["string", "null"], "examples": ["22631"] },
+            "updateBuildRevision": {
+              "type": ["integer", "null"],
+              "minimum": 0,
+              "description": "The UBR (update build revision) from the registry; the fourth component of the full build, for example the 4046 in 22631.4046.",
+              "examples": [4046]
+            },
+            "architecture": { "type": ["string", "null"], "examples": ["64-bit"] },
+            "installDate": {
+              "$ref": "#/$defs/isoTimestampOrNull",
+              "description": "The OS install date reported by WMI."
+            },
+            "lastBootUpTime": {
+              "$ref": "#/$defs/isoTimestampOrNull",
+              "description": "The last boot time reported by WMI."
+            },
+            "registeredUser": { "type": ["string", "null"] }
+          }
+        },
+        "cpu": {
+          "type": "array",
+          "description": "One object per processor package from Win32_Processor.",
+          "items": { "$ref": "#/$defs/cpu" }
+        },
+        "gpu": {
+          "type": "array",
+          "description": "One object per display adapter from Win32_VideoController, each with its driver version and date.",
+          "items": { "$ref": "#/$defs/gpu" }
+        },
+        "memoryModules": {
+          "type": "array",
+          "description": "One object per populated DIMM slot from Win32_PhysicalMemory.",
+          "items": { "$ref": "#/$defs/memoryModule" }
+        },
+        "motherboard": {
+          "type": "object",
+          "title": "Motherboard",
+          "description": "Baseboard identity from Win32_BaseBoard.",
+          "required": ["manufacturer", "product", "version", "serialNumber"],
+          "additionalProperties": false,
+          "properties": {
+            "manufacturer": { "type": ["string", "null"], "examples": ["Micro-Star International Co., Ltd."] },
+            "product": { "type": ["string", "null"], "examples": ["PRO Z690-A (MS-7D25)"] },
+            "version": { "type": ["string", "null"] },
+            "serialNumber": { "type": ["string", "null"] }
+          }
+        },
+        "bios": {
+          "type": "object",
+          "title": "BIOS / firmware",
+          "description": "Firmware identity from Win32_BIOS.",
+          "required": ["manufacturer", "smbiosVersion", "version", "releaseDate"],
+          "additionalProperties": false,
+          "properties": {
+            "manufacturer": { "type": ["string", "null"], "examples": ["American Megatrends International, LLC."] },
+            "smbiosVersion": { "type": ["string", "null"], "examples": ["A.90"] },
+            "version": { "type": ["string", "null"] },
+            "releaseDate": {
+              "$ref": "#/$defs/isoTimestampOrNull",
+              "description": "Firmware release date reported by WMI."
+            }
+          }
+        },
+        "disks": {
+          "type": "array",
+          "description": "One object per physical disk from Win32_DiskDrive.",
+          "items": { "$ref": "#/$defs/disk" }
+        },
+        "volumes": {
+          "type": "array",
+          "description": "One object per fixed logical volume (DriveType=3) from Win32_LogicalDisk.",
+          "items": { "$ref": "#/$defs/volume" }
+        },
+        "networkAdapters": {
+          "type": "array",
+          "description": "Network adapters, preferentially from Get-NetAdapter (which supplies driver version and date directly). On hosts lacking the NetAdapter module the collector falls back to Win32_NetworkAdapter, in which case driver fields are null and status and linkSpeed carry the CIM numeric forms.",
+          "items": { "$ref": "#/$defs/networkAdapter" }
+        },
+        "thermalZones": {
+          "type": "array",
+          "description": "ACPI thermal-zone temperatures from MSAcpi_ThermalZoneTemperature (root\\wmi). Frequently empty on desktop firmware, which does not expose this class.",
+          "items": { "$ref": "#/$defs/thermalZone" }
+        }
+      }
+    },
+    "cpu": {
+      "type": "object",
+      "title": "Processor package",
+      "required": [
+        "name",
+        "manufacturer",
+        "socket",
+        "cores",
+        "logicalProcessors",
+        "maxClockMHz",
+        "currentClockMHz",
+        "l2CacheKB",
+        "l3CacheKB",
+        "processorId"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": ["string", "null"], "examples": ["12th Gen Intel(R) Core(TM) i7-12700K"] },
+        "manufacturer": { "type": ["string", "null"], "examples": ["GenuineIntel"] },
+        "socket": { "type": ["string", "null"], "examples": ["U3E1"] },
+        "cores": { "type": ["integer", "null"], "minimum": 0, "description": "Physical core count." },
+        "logicalProcessors": { "type": ["integer", "null"], "minimum": 0, "description": "Logical processor count including SMT/HyperThreading." },
+        "maxClockMHz": { "type": ["integer", "null"], "minimum": 0, "description": "Rated maximum clock in MHz." },
+        "currentClockMHz": { "type": ["integer", "null"], "minimum": 0, "description": "Instantaneous clock in MHz at query time." },
+        "l2CacheKB": { "type": ["integer", "null"], "minimum": 0 },
+        "l3CacheKB": { "type": ["integer", "null"], "minimum": 0 },
+        "processorId": { "type": ["string", "null"], "description": "The processor's CPUID signature string." }
+      }
+    },
+    "gpu": {
+      "type": "object",
+      "title": "Display adapter",
+      "required": [
+        "name",
+        "videoProcessor",
+        "driverVersion",
+        "driverDate",
+        "adapterRamBytes",
+        "adapterRamGB",
+        "currentResolution",
+        "currentRefreshHz",
+        "videoModeDescription",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": ["string", "null"], "examples": ["NVIDIA GeForce RTX 4070"] },
+        "videoProcessor": { "type": ["string", "null"] },
+        "driverVersion": { "type": ["string", "null"], "examples": ["32.0.15.6094"] },
+        "driverDate": {
+          "$ref": "#/$defs/isoTimestampOrNull",
+          "description": "The display driver's date, a key field when triaging driver-related display hangs."
+        },
+        "adapterRamBytes": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Adapter RAM as reported by Win32_VideoController.AdapterRAM. This value is a 32-bit field that saturates at 4 GiB (4294967295) and therefore under-reports VRAM on modern high-memory cards; treat it as unreliable above 4 GiB.",
+          "examples": [4294967295]
+        },
+        "adapterRamGB": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "adapterRamBytes expressed in gibibytes. Subject to the same 4 GiB saturation caveat."
+        },
+        "currentResolution": {
+          "type": ["string", "null"],
+          "description": "Current horizontal x vertical resolution, or null if the adapter reported none (for example a headless or inactive output).",
+          "examples": ["2560x1440", null]
+        },
+        "currentRefreshHz": { "type": ["integer", "null"], "minimum": 0, "examples": [144] },
+        "videoModeDescription": { "type": ["string", "null"] },
+        "status": { "type": ["string", "null"], "examples": ["OK"] }
+      }
+    },
+    "memoryModule": {
+      "type": "object",
+      "title": "Memory module (DIMM)",
+      "required": [
+        "manufacturer",
+        "partNumber",
+        "bankLabel",
+        "deviceLocator",
+        "capacityBytes",
+        "capacityGB",
+        "speedMTps",
+        "configuredSpeedMTps",
+        "memoryType",
+        "serialNumber"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "manufacturer": { "type": ["string", "null"], "examples": ["G Skill"] },
+        "partNumber": { "type": ["string", "null"], "examples": ["F5-6000J3038F16G"] },
+        "bankLabel": { "type": ["string", "null"], "examples": ["P0 CHANNEL A"] },
+        "deviceLocator": { "type": ["string", "null"], "examples": ["DIMM 0"] },
+        "capacityBytes": { "type": ["integer", "null"], "minimum": 0, "examples": [17179869184] },
+        "capacityGB": { "type": ["number", "null"], "minimum": 0, "examples": [16.0] },
+        "speedMTps": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Rated module speed in MT/s (labeled 'Speed' by SMBIOS).",
+          "examples": [6000]
+        },
+        "configuredSpeedMTps": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Actual configured/running speed in MT/s. A gap below speedMTps means the module is running below its rating (for example XMP/EXPO not applied).",
+          "examples": [4800, 6000]
+        },
+        "memoryType": {
+          "type": ["string", "null"],
+          "description": "Human-readable memory generation mapped from SMBIOSMemoryType (for example DDR4, DDR5). When the code is unmapped, the raw form 'code N' is emitted.",
+          "examples": ["DDR5", "DDR4", "code 0"]
+        },
+        "serialNumber": { "type": ["string", "null"] }
+      }
+    },
+    "disk": {
+      "type": "object",
+      "title": "Physical disk",
+      "required": [
+        "model",
+        "interfaceType",
+        "mediaType",
+        "sizeBytes",
+        "sizeGB",
+        "partitions",
+        "serialNumber",
+        "firmwareRevision",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "model": { "type": ["string", "null"], "examples": ["Samsung SSD 990 PRO 2TB"] },
+        "interfaceType": {
+          "type": ["string", "null"],
+          "description": "Bus interface as reported by WMI. Note NVMe drives frequently report 'SCSI' here due to the storage stack abstraction rather than a literal SCSI bus.",
+          "examples": ["SCSI", "IDE", "USB"]
+        },
+        "mediaType": { "type": ["string", "null"], "examples": ["Fixed hard disk media"] },
+        "sizeBytes": { "type": ["integer", "null"], "minimum": 0 },
+        "sizeGB": { "type": ["number", "null"], "minimum": 0, "examples": [1863.01] },
+        "partitions": { "type": ["integer", "null"], "minimum": 0 },
+        "serialNumber": { "type": ["string", "null"] },
+        "firmwareRevision": { "type": ["string", "null"] },
+        "status": { "type": ["string", "null"], "examples": ["OK"] }
+      }
+    },
+    "volume": {
+      "type": "object",
+      "title": "Logical volume",
+      "required": [
+        "deviceId",
+        "volumeName",
+        "fileSystem",
+        "sizeBytes",
+        "sizeGB",
+        "freeBytes",
+        "freeGB",
+        "percentFree"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "deviceId": { "type": ["string", "null"], "examples": ["C:"] },
+        "volumeName": { "type": ["string", "null"], "examples": ["OS", null] },
+        "fileSystem": { "type": ["string", "null"], "examples": ["NTFS"] },
+        "sizeBytes": { "type": ["integer", "null"], "minimum": 0 },
+        "sizeGB": { "type": ["number", "null"], "minimum": 0 },
+        "freeBytes": { "type": ["integer", "null"], "minimum": 0 },
+        "freeGB": { "type": ["number", "null"], "minimum": 0 },
+        "percentFree": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Free space as a percentage of total, one decimal place.",
+          "examples": [42.7]
+        }
+      }
+    },
+    "networkAdapter": {
+      "type": "object",
+      "title": "Network adapter",
+      "description": "A network interface. The primary source (Get-NetAdapter) fills all fields; the CIM fallback leaves the driver fields null and returns numeric status and speed.",
+      "required": [
+        "name",
+        "description",
+        "macAddress",
+        "status",
+        "linkSpeed",
+        "driverProvider",
+        "driverVersion",
+        "driverDate",
+        "driverFileName"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": ["string", "null"], "examples": ["Ethernet"] },
+        "description": { "type": ["string", "null"], "examples": ["Intel(R) Ethernet Controller I225-V"] },
+        "macAddress": { "type": ["string", "null"], "examples": ["A1-B2-C3-D4-E5-F6"] },
+        "status": {
+          "type": ["string", "integer", "null"],
+          "description": "Link status. A string (for example 'Up', 'Disconnected') from Get-NetAdapter, or the numeric NetConnectionStatus code from the CIM fallback.",
+          "examples": ["Up", "Disconnected", 2]
+        },
+        "linkSpeed": {
+          "type": ["string", "integer", "null"],
+          "description": "Negotiated link speed. A formatted string (for example '2.5 Gbps') from Get-NetAdapter, or bits-per-second as an integer from the CIM fallback.",
+          "examples": ["2.5 Gbps", 2500000000]
+        },
+        "driverProvider": { "type": ["string", "null"], "examples": ["Intel"] },
+        "driverVersion": {
+          "type": ["string", "null"],
+          "description": "NIC driver version. Central to diagnosing recurring network-driver faults.",
+          "examples": ["1.1.4.43"]
+        },
+        "driverDate": { "$ref": "#/$defs/isoTimestampOrNull" },
+        "driverFileName": { "type": ["string", "null"], "examples": ["e2f68.sys"] }
+      }
+    },
+    "thermalZone": {
+      "type": "object",
+      "title": "ACPI thermal zone",
+      "required": ["instanceName", "celsius"],
+      "additionalProperties": false,
+      "properties": {
+        "instanceName": { "type": ["string", "null"], "examples": ["ACPI\\ThermalZone\\TZ00_0"] },
+        "celsius": {
+          "type": ["number", "null"],
+          "description": "Zone temperature in degrees Celsius, converted from the WMI tenths-of-a-Kelvin reading. Null when the reading was unavailable.",
+          "examples": [42.5]
+        }
+      }
+    },
+    "driver": {
+      "type": "object",
+      "title": "Signed driver",
+      "description": "A single signed device driver. Only devices reporting both a name and a driver version are included, so those two fields are always non-null.",
+      "required": [
+        "deviceName",
+        "deviceClass",
+        "manufacturer",
+        "driverVersion",
+        "driverDate",
+        "driverProvider",
+        "infName"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "deviceName": { "type": "string", "minLength": 1, "examples": ["NVIDIA GeForce RTX 4070"] },
+        "deviceClass": { "type": ["string", "null"], "examples": ["DISPLAY", "NET", "SYSTEM"] },
+        "manufacturer": { "type": ["string", "null"], "examples": ["NVIDIA"] },
+        "driverVersion": { "type": "string", "minLength": 1, "examples": ["32.0.15.6094"] },
+        "driverDate": { "$ref": "#/$defs/isoTimestampOrNull" },
+        "driverProvider": { "type": ["string", "null"], "examples": ["NVIDIA"] },
+        "infName": { "type": ["string", "null"], "examples": ["oem123.inf"] }
+      }
+    },
+    "errorEvents": {
+      "type": "object",
+      "title": "Event-log error collection",
+      "description": "Critical and Error (optionally Warning) events from the System and Application logs over the look-back window, plus a frequency roll-up so recurring signatures surface without reading every record.",
+      "required": [
+        "windowStart",
+        "windowDays",
+        "levelsCaptured",
+        "totalCaptured",
+        "cappedAt",
+        "topSignatures",
+        "events"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "windowStart": {
+          "$ref": "#/$defs/isoTimestamp",
+          "description": "The earliest event time considered (collection time minus windowDays)."
+        },
+        "windowDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365,
+          "description": "The look-back window in days.",
+          "examples": [30]
+        },
+        "levelsCaptured": {
+          "type": "string",
+          "enum": ["Critical, Error", "Critical, Error, Warning"],
+          "description": "Which severity levels this run captured."
+        },
+        "totalCaptured": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of event records in the events array (after the cap).",
+          "examples": [37, 0]
+        },
+        "cappedAt": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The MaxEvents ceiling applied to the query. If totalCaptured equals this value, older matching events beyond the cap were not collected.",
+          "examples": [1000]
+        },
+        "topSignatures": {
+          "type": "array",
+          "description": "The most frequent provider-and-id pairs in the window, highest count first, up to 30 entries. This is where a repeating WHEA-Logger, Kernel-Power 41, or display-TDR signature becomes obvious at a glance.",
+          "items": { "$ref": "#/$defs/errorSignature" }
+        },
+        "events": {
+          "type": "array",
+          "description": "The individual event records, newest first, up to the cap. Empty when no matching events occurred in the window.",
+          "items": { "$ref": "#/$defs/errorEvent" }
+        }
+      }
+    },
+    "errorSignature": {
+      "type": "object",
+      "title": "Event frequency signature",
+      "required": ["providerAndId", "provider", "id", "count", "sampleMessage"],
+      "additionalProperties": false,
+      "properties": {
+        "providerAndId": {
+          "type": "string",
+          "description": "The grouping key, formatted 'ProviderName/EventId'.",
+          "examples": ["Microsoft-Windows-WHEA-Logger/18", "Microsoft-Windows-Kernel-Power/41"]
+        },
+        "provider": { "type": ["string", "null"], "examples": ["Microsoft-Windows-Kernel-Power"] },
+        "id": { "type": "integer", "minimum": 0, "examples": [41, 18, 4101] },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "How many times this provider-and-id pair occurred in the window.",
+          "examples": [3]
+        },
+        "sampleMessage": {
+          "type": ["string", "null"],
+          "description": "The message text of the first record in this group, whitespace-collapsed.",
+          "examples": ["The system has rebooted without cleanly shutting down first."]
+        }
+      }
+    },
+    "errorEvent": {
+      "type": "object",
+      "title": "Event-log record",
+      "required": ["timeCreated", "logName", "level", "providerName", "id", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "timeCreated": { "$ref": "#/$defs/isoTimestampOrNull" },
+        "logName": {
+          "type": "string",
+          "enum": ["System", "Application"],
+          "description": "The event log the record came from."
+        },
+        "level": {
+          "type": "string",
+          "enum": ["Critical", "Error", "Warning"],
+          "description": "The record's severity display name. Warning appears only when the run included warnings."
+        },
+        "providerName": { "type": ["string", "null"], "examples": ["Microsoft-Windows-WHEA-Logger"] },
+        "id": { "type": "integer", "minimum": 0, "examples": [41, 18, 6008] },
+        "message": {
+          "type": ["string", "null"],
+          "description": "The rendered event message, whitespace-collapsed to a single line. Null when the provider supplied no renderable message.",
+          "examples": ["A fatal hardware error has occurred."]
+        }
+      }
+    },
+    "software": {
+      "type": "object",
+      "title": "Installed application",
+      "required": ["name", "version", "publisher", "installDate", "installLocation", "scope"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The application display name. Entries without a display name are not emitted, so this is always present.",
+          "examples": ["Tom Clancy's The Division 2"]
+        },
+        "version": { "type": ["string", "null"], "examples": ["1.0.0.0", null] },
+        "publisher": { "type": ["string", "null"], "examples": ["Ubisoft"] },
+        "installDate": {
+          "type": ["string", "null"],
+          "description": "Install date. Normalized to YYYY-MM-DD when the registry value is a bare yyyyMMdd stamp; otherwise the raw registry value; null when absent.",
+          "examples": ["2026-03-14", null]
+        },
+        "installLocation": { "type": ["string", "null"] },
+        "scope": {
+          "type": "string",
+          "enum": ["x64", "x86", "user"],
+          "description": "Which uninstall hive the entry came from: x64 (HKLM native), x86 (HKLM WOW6432Node), or user (HKCU)."
+        }
+      }
+    },
+    "crashArtifacts": {
+      "type": "object",
+      "title": "Crash and stability artifacts",
+      "description": "Signals for diagnosing hard locks, spontaneous reboots, and driver faults: dump inventory, active power plan, pending-reboot flags, installed hotfixes, and Reliability Monitor records.",
+      "required": [
+        "dumps",
+        "activePowerPlan",
+        "pendingReboot",
+        "hotfixes",
+        "reliabilityRecords"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "dumps": {
+          "type": "array",
+          "description": "Crash-dump files found on disk: every minidump in %SystemRoot%\\Minidump plus %SystemRoot%\\MEMORY.DMP if present. Empty when no dumps exist. The lastWriteTime of each is the effective crash time and correlates directly with errorEvents.",
+          "items": { "$ref": "#/$defs/dump" }
+        },
+        "activePowerPlan": {
+          "type": ["string", "null"],
+          "description": "Friendly name of the active power plan, relevant to sleep-state and power-related hard locks.",
+          "examples": ["Balanced", "Ultimate Performance", null]
+        },
+        "pendingReboot": {
+          "type": "object",
+          "title": "Pending-reboot flags",
+          "description": "Whether the OS is holding a reboot from three independent sources. Any true value can produce driver/state inconsistencies until the machine restarts.",
+          "required": ["componentBasedServicing", "windowsUpdate", "pendingFileRename"],
+          "additionalProperties": false,
+          "properties": {
+            "componentBasedServicing": {
+              "type": "boolean",
+              "description": "A servicing operation flagged RebootPending under Component Based Servicing."
+            },
+            "windowsUpdate": {
+              "type": "boolean",
+              "description": "Windows Update flagged RebootRequired."
+            },
+            "pendingFileRename": {
+              "type": "boolean",
+              "description": "PendingFileRenameOperations is set under Session Manager (a rename or delete queued for next boot)."
+            }
+          }
+        },
+        "hotfixes": {
+          "type": "array",
+          "description": "Installed quick-fix engineering updates from Get-HotFix, newest first. Empty if the query was unavailable.",
+          "items": { "$ref": "#/$defs/hotfix" }
+        },
+        "reliabilityRecords": {
+          "type": "array",
+          "description": "Reliability Monitor records within the look-back window, newest first, up to 100. Empty when the class is unavailable or held no records in the window. These often name the failing application or driver behind a stability event.",
+          "items": { "$ref": "#/$defs/reliabilityRecord" }
+        }
+      }
+    },
+    "dump": {
+      "type": "object",
+      "title": "Crash dump file",
+      "required": ["path", "sizeBytes", "lastWriteTime", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "minLength": 1, "examples": ["C:\\Windows\\Minidump\\071026-8421-01.dmp"] },
+        "sizeBytes": { "type": "integer", "minimum": 0, "examples": [1052672] },
+        "lastWriteTime": {
+          "$ref": "#/$defs/isoTimestampOrNull",
+          "description": "The file's last-write time, which is effectively the crash time."
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["minidump", "full"],
+          "description": "minidump for a file in the Minidump folder; full for MEMORY.DMP."
+        }
+      }
+    },
+    "hotfix": {
+      "type": "object",
+      "title": "Installed hotfix",
+      "required": ["hotfixId", "description", "installedOn"],
+      "additionalProperties": false,
+      "properties": {
+        "hotfixId": { "type": ["string", "null"], "examples": ["KB5039212"] },
+        "description": { "type": ["string", "null"], "examples": ["Security Update", "Update"] },
+        "installedOn": { "$ref": "#/$defs/isoTimestampOrNull" }
+      }
+    },
+    "reliabilityRecord": {
+      "type": "object",
+      "title": "Reliability Monitor record",
+      "required": ["timeGenerated", "sourceName", "eventId", "productName", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "timeGenerated": { "$ref": "#/$defs/isoTimestampOrNull" },
+        "sourceName": { "type": ["string", "null"], "examples": ["Windows Error Reporting", "Application Hang"] },
+        "eventId": { "type": ["integer", "null"], "minimum": 0 },
+        "productName": { "type": ["string", "null"], "examples": ["TheDivision2.exe"] },
+        "message": {
+          "type": ["string", "null"],
+          "description": "The record message, whitespace-collapsed to a single line.",
+          "examples": ["The application stopped responding and was closed."]
+        }
+      }
+    }
+  }
+}

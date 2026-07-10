@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## `[Unreleased]`
 
 ### Added
+- **`system-diagnostic.schema.json`** — new schema for validating the JSON document emitted by `Get-SystemDiagnostic.ps1` (schemaVersion 1.0), covering host hardware, signed drivers, error events, installed software, and crash artifacts, plus its `schemas.json` catalog entry.
 - **`webvtt-json.schema.json`** — new schema for validating the mapped JSON document emitted by `ConvertFrom-WebVtt.ps1` (schemaVersion 1.0), plus its `schemas.json` catalog entry.
 - **`reference-mapping.schema.json`** — new schema for validating reference mapping entries that track old-to-new value migrations across documentation scopes, with support for exact, regex, and contextual match modes.
 - **`shruggie-indexer-v4.schema.json`** — new current schema for shruggie-indexer and metadexer outputs, replacing v3.

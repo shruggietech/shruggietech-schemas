@@ -210,5 +210,15 @@
         "file": "webvtt-json.schema.json",
         "notes": [],
         "externalLinks": []
+    },
+    {
+        "id": "system-diagnostic",
+        "title": "ShruggieTech System Diagnostic Document",
+        "version": "1.0",
+        "description": "Validation schema for the JSON document emitted by Get-SystemDiagnostic.ps1 (schemaVersion 1.0), inventorying host hardware, signed drivers, error events, installed software, and crash artifacts. Collection is best-effort: every documented key is always present, with unavailable sources rendered as an empty array, empty object, or null rather than omitted.",
+        "status": "current",
+        "file": "system-diagnostic.schema.json",
+        "notes": [],
+        "externalLinks": []
     }
 ]
