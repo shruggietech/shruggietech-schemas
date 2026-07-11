@@ -693,9 +693,9 @@
           "description": "The event log the record came from."
         },
         "level": {
-          "type": "string",
-          "enum": ["Critical", "Error", "Warning"],
-          "description": "The record's severity display name. Warning appears only when the run included warnings."
+          "type": ["string", "null"],
+          "description": "The record's severity display name, or null when the event provider did not render one (common for classic/legacy event sources whose numeric level still matched the filter). Conventionally one of Critical, Error, or Warning, with Warning present only when the run included warnings. Not constrained to an enum, because unrendered records yield null and some providers surface level strings outside the conventional set.",
+          "examples": ["Critical", "Error", "Warning", null]
         },
         "providerName": { "type": ["string", "null"], "examples": ["Microsoft-Windows-WHEA-Logger"] },
         "id": { "type": "integer", "minimum": 0, "examples": [41, 18, 6008] },
