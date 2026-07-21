@@ -220,5 +220,15 @@
         "file": "system-diagnostic.schema.json",
         "notes": [],
         "externalLinks": []
+    },
+    {
+        "id": "srt-json",
+        "title": "ShruggieTech SubRip-to-JSON Document",
+        "version": null,
+        "description": "Validation schema for the JSON array emitted by ConvertFrom-Srt.ps1, where each element is one parsed SubRip (.srt) subtitle cue. Every cue carries the same fixed field set, with timecodes normalized to HH:MM:SS,mmm and pre-converted to whole milliseconds; absent values (speaker label, display coordinates) are rendered as null rather than omitted.",
+        "status": "current",
+        "file": "srt-json.schema.json",
+        "notes": [],
+        "externalLinks": []
     }
 ]

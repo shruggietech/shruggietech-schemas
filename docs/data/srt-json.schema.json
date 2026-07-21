@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.shruggie.tech/data/srt-json.schema.json",
+  "title": "SubRip cue array (ConvertFrom-Srt.ps1 output)",
+  "description": "Describes the JSON produced by ConvertFrom-Srt.ps1: the top-level value is an array, and each element is one parsed SubRip (.srt) subtitle cue. Every cue carries the same fixed set of fields, so the array is a uniform table that maps one-to-one onto the CSV output. Timecodes are normalized to the canonical HH:MM:SS,mmm form, and each cue also exposes its times pre-converted to whole milliseconds for arithmetic and sorting. Fields that a given cue does not carry (a speaker label, display coordinates) are present as JSON null rather than being omitted, so the field set is identical for every element.",
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/cue"
+  },
+  "$defs": {
+    "cue": {
+      "type": "object",
+      "title": "SubRip cue",
+      "description": "A single subtitle entry from the source file: one sequence number, one start/end time pair, and the text shown during that interval, plus derived and optional fields.",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "time_start",
+        "time_end",
+        "ms_start",
+        "ms_end",
+        "ms_duration",
+        "speaker",
+        "content",
+        "x1",
+        "x2",
+        "y1",
+        "y2"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The cue's sequence number, taken verbatim from the numeric line at the top of the block in the source file. In a well-formed SubRip file these run 1, 2, 3, ... in order, but the value here is whatever the file actually stated; the parser does not renumber. If a block had no readable numeric line, this falls back to the cue's ordinal position in the file (1 for the first cue, and so on).",
+          "examples": [1, 2, 47]
+        },
+        "time_start": {
+          "type": "string",
+          "pattern": "^\\d{2,}:[0-5]\\d:[0-5]\\d,\\d{3}$",
+          "description": "The moment the subtitle appears, normalized to the canonical SubRip timecode form HH:MM:SS,mmm (hours, minutes, seconds, then a comma and exactly three digits of milliseconds). Normalization means: the millisecond separator is always a comma even if the source used a period, hours are zero-padded to at least two digits, and short millisecond fields in the source are right-padded to three digits. Note the comma decimal separator, which is what distinguishes SubRip from WebVTT (which uses a period).",
+          "examples": ["00:00:01,000", "01:23:04,000"]
+        },
+        "time_end": {
+          "type": "string",
+          "pattern": "^\\d{2,}:[0-5]\\d:[0-5]\\d,\\d{3}$",
+          "description": "The moment the subtitle disappears, in the same normalized HH:MM:SS,mmm form as time_start. In a well-formed cue this is at or after time_start.",
+          "examples": ["00:00:04,000", "01:23:07,500"]
+        },
+        "ms_start": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "time_start expressed as a single integer count of milliseconds from zero (hours*3600000 + minutes*60000 + seconds*1000 + milliseconds). Provided so downstream code can sort, compare, offset, or difference cue times without re-parsing the timecode string.",
+          "examples": [1000, 4984000]
+        },
+        "ms_end": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "time_end expressed as whole milliseconds from zero, computed the same way as ms_start.",
+          "examples": [4000, 4987500]
+        },
+        "ms_duration": {
+          "type": "integer",
+          "description": "How long the subtitle is on screen, in milliseconds: ms_end minus ms_start. This is normally non-negative. It can be negative only if the source cue's end time precedes its start time, which is a defect in the source file rather than in the conversion; the value is reported as-is so such defects remain visible.",
+          "examples": [3000, 3750]
+        },
+        "speaker": {
+          "type": ["string", "null"],
+          "description": "The speaker label when the cue text began with a 'Name: dialogue' prefix, with the label lifted out and the 'Name: ' removed from content. This prefix is a transcript convention (Zoom, Teams, Otter, and similar), NOT part of the SubRip format itself, so extraction is heuristic: it fires only when a colon is immediately followed by whitespace (so time-of-day text such as 'meet at 3:30' is not misread) and the candidate label contains no '?' or '!'. It is null when no label was detected, and null for every cue when the converter was run with -NoSpeaker. Because the heuristic can still misfire on genuine lines like 'Note: ...', treat this field as best-effort rather than authoritative.",
+          "examples": ["Narrator", "Speaker 1", null]
+        },
+        "content": {
+          "type": "string",
+          "description": "The subtitle text for this cue. When the source cue spanned several lines, those lines are joined with a single line feed (\\n) in this one string. Inline SubRip styling tags (<b>, <i>, <u>, and <font color=\"...\">) are preserved verbatim rather than stripped, since they are part of the displayed text. When a speaker label was extracted into the speaker field, the leading 'Name: ' is removed from here; otherwise the text is left exactly as written. May be an empty string if the source cue had no text lines.",
+          "examples": [
+            "Plain subtitle text.",
+            "A caption that wraps onto\na second line.",
+            "<i>Emphasized text.</i>"
+          ]
+        },
+        "x1": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Left edge, in pixels, of the optional SubRip display bounding box. SubRip allows a timecode line to carry a position suffix of the form 'X1:left X2:right Y1:top Y2:bottom'; when present, its four values populate x1/x2/y1/y2. This is an optional and rarely used part of the format, so the value is null for the common case where the cue had no coordinates.",
+          "examples": [40, null]
+        },
+        "x2": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Right edge, in pixels, of the optional SubRip display bounding box (the X2 value of an 'X1:.. X2:.. Y1:.. Y2:..' suffix). Null when the cue carried no coordinates.",
+          "examples": [600, null]
+        },
+        "y1": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Top edge, in pixels, of the optional SubRip display bounding box (the Y1 value). Null when the cue carried no coordinates.",
+          "examples": [20, null]
+        },
+        "y2": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Bottom edge, in pixels, of the optional SubRip display bounding box (the Y2 value). Null when the cue carried no coordinates.",
+          "examples": [50, null]
+        }
+      }
+    }
+  },
+  "examples": [
+    [
+      {
+        "index": 1,
+        "time_start": "00:00:01,000",
+        "time_end": "00:00:04,000",
+        "ms_start": 1000,
+        "ms_end": 4000,
+        "ms_duration": 3000,
+        "speaker": "Narrator",
+        "content": "The sample file begins here.",
+        "x1": null,
+        "x2": null,
+        "y1": null,
+        "y2": null
+      },
+      {
+        "index": 2,
+        "time_start": "00:00:04,500",
+        "time_end": "00:00:08,250",
+        "ms_start": 4500,
+        "ms_end": 8250,
+        "ms_duration": 3750,
+        "speaker": null,
+        "content": "A second line of subtitle text,\nspanning two rows.",
+        "x1": null,
+        "x2": null,
+        "y1": null,
+        "y2": null
+      }
+    ]
+  ]
+}
